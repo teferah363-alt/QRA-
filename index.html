@@ -1,5 +1,4 @@
-
-html = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -23,10 +22,13 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;min-height:100vh}
 .login-card button:hover{background:#1e429f}
 .login-card .error{color:#dc2626;font-size:0.9em;margin-top:10px;display:none}
 .login-card .hint{background:#dbeafe;color:#1e40af;padding:12px;border-radius:8px;margin-top:20px;font-size:0.85em}
+.login-tabs{display:flex;gap:10px;margin-bottom:20px;justify-content:center}
+.login-tab{padding:8px 20px;border-radius:20px;cursor:pointer;font-size:0.9em;font-weight:600;color:#64748b;background:#f1f5f9;transition:0.2s;border:none}
+.login-tab.active{background:#1a56db;color:white}
 
 /* Layout */
 .app{display:none}
-.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:#1e293b;color:white;padding:20px 0}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:#1e293b;color:white;padding:20px 0;overflow-y:auto}
 .sidebar-header{padding:0 20px 20px;border-bottom:1px solid #334155;margin-bottom:15px}
 .sidebar-header h3{display:flex;align-items:center;gap:10px}
 .nav-item{padding:12px 20px;cursor:pointer;color:#94a3b8;transition:0.2s}
@@ -103,57 +105,92 @@ tr:hover{background:#f8fafc}
 .att-avatar{width:36px;height:36px;border-radius:8px;background:#1a56db;color:white;display:flex;align-items:center;justify-content:center;font-weight:bold}
 .status-btns{display:flex;gap:4px;flex-wrap:wrap}
 .s-btn{padding:6px 12px;border:none;border-radius:6px;font-size:0.8em;cursor:pointer;font-weight:600}
-.s-btn.p{background:#d1fae5;color:#065f46}
-.s-btn.a{background:#fee2e2;color:#991b1b}
-.s-btn.l{background:#fef3c7;color:#92400e}
+.s-btn.p{background:#e2e8f0;color:#475569}
+.s-btn.p.on{background:#d1fae5;color:#065f46;box-shadow:0 0 0 2px #10b981}
+.s-btn.a{background:#e2e8f0;color:#475569}
+.s-btn.a.on{background:#fee2e2;color:#991b1b;box-shadow:0 0 0 2px #ef4444}
+.s-btn.l{background:#e2e8f0;color:#475569}
+.s-btn.l.on{background:#fef3c7;color:#92400e;box-shadow:0 0 0 2px #f59e0b}
 .s-btn.e{background:#e2e8f0;color:#475569}
-.s-btn.ear{background:#dbeafe;color:#1e40af}
-.s-btn.on{box-shadow:0 0 0 2px #1a56db}
+.s-btn.e.on{background:#f1f5f9;color:#475569;box-shadow:0 0 0 2px #64748b}
+.s-btn.ear{background:#e2e8f0;color:#475569}
+.s-btn.ear.on{background:#dbeafe;color:#1e40af;box-shadow:0 0 0 2px #3b82f6}
+
+/* Student Dashboard */
+.student-qr-big{text-align:center;padding:30px;background:#f8fafc;border-radius:16px;margin-bottom:20px}
+.student-qr-big #studentQRCode{display:inline-block;padding:20px;background:white;border-radius:16px;box-shadow:0 4px 15px rgba(0,0,0,0.1)}
+.student-info{text-align:center;margin-bottom:20px}
+.student-info h2{color:#1e293b;font-size:1.5em;margin-bottom:5px}
+.student-info p{color:#64748b;font-size:1em}
+.attendance-history{max-height:400px;overflow-y:auto}
 
 .hidden{display:none!important}
 .empty{text-align:center;padding:30px;color:#94a3b8}
 .empty i{font-size:2.5em;margin-bottom:10px}
 
+/* Toast notification */
+.toast{position:fixed;top:20px;right:20px;background:#1e293b;color:white;padding:15px 20px;border-radius:10px;box-shadow:0 4px 15px rgba(0,0,0,0.2);z-index:1000;display:none;animation:slideIn 0.3s ease}
+.toast.show{display:block}
+.toast.success{background:#059669}
+.toast.error{background:#dc2626}
+@keyframes slideIn{from{transform:translateX(100px);opacity:0}to{transform:translateX(0);opacity:1}}
+
 @media(max-width:768px){
-.sidebar{width:100%;transform:translateX(-100%);z-index:100}
+.sidebar{width:100%;transform:translateX(-100%);z-index:100;position:fixed}
 .sidebar.open{transform:translateX(0)}
 .main-content{margin-left:0}
 .stats{grid-template-columns:1fr 1fr}
 .att-item{flex-direction:column;align-items:flex-start;gap:8px}
 }
 </style>
+<base target="_blank">
 </head>
-<body>
+<body onload="init()">
 
-<!-- LOGIN -->
+<div id="toast" class="toast"></div>
+
 <div id="loginPage" class="login-page">
 <div class="login-card">
 <h2><i class="fas fa-qrcode" style="color:#1a56db;font-size:2em"></i><br>QR Attendance</h2>
 <p>University Management System</p>
+
+<div class="login-tabs">
+<button class="login-tab active" onclick="switchLogin('admin')" id="tabAdmin">Admin</button>
+<button class="login-tab" onclick="switchLogin('student')" id="tabStudent">Student</button>
+</div>
+
+<div id="adminLogin">
 <input type="text" id="loginUser" placeholder="Username" value="admin">
 <input type="password" id="loginPass" placeholder="Password" value="admin2024">
-<button onclick="login()"><i class="fas fa-sign-in-alt"></i> Login</button>
+<button onclick="login()"><i class="fas fa-sign-in-alt"></i> Login as Admin</button>
+</div>
+
+<div id="studentLogin" class="hidden">
+<input type="text" id="studentLoginId" placeholder="Enter your Student ID (e.g. RITW/661/17)">
+<button onclick="studentLogin()"><i class="fas fa-sign-in-alt"></i> Login as Student</button>
+<p style="margin-top:10px;font-size:0.85em;color:#64748b">Enter your Student ID to view your QR and attendance</p>
+</div>
+
 <p class="error" id="loginError">Wrong username or password!</p>
-<div class="hint"><strong>Demo:</strong> admin / admin2024</div>
+<div class="hint" id="loginHint"><strong>Demo:</strong> admin / admin2024</div>
 </div>
 </div>
 
-<!-- APP -->
-<div id="mainApp" class="app">
+<div id="adminApp" class="app">
 <div class="sidebar">
 <div class="sidebar-header"><h3><i class="fas fa-university"></i> UniAttendance</h3></div>
-<div class="nav-item active" onclick="showPage('dash',this)"><i class="fas fa-chart-line"></i> Dashboard</div>
-<div class="nav-item" onclick="showPage('qr',this)"><i class="fas fa-qrcode"></i> Generate QR</div>
-<div class="nav-item" onclick="showPage('scan',this)"><i class="fas fa-camera"></i> Scan QR</div>
-<div class="nav-item" onclick="showPage('mark',this)"><i class="fas fa-clipboard-check"></i> Mark Attendance</div>
-<div class="nav-item" onclick="showPage('students',this)"><i class="fas fa-users"></i> Students</div>
-<div class="nav-item" onclick="showPage('reports',this)"><i class="fas fa-file-alt"></i> Reports</div>
+<div class="nav-item active" onclick="showPage('dash',this)" data-page="dash"><i class="fas fa-chart-line"></i> Dashboard</div>
+<div class="nav-item" onclick="showPage('qr',this)" data-page="qr"><i class="fas fa-qrcode"></i> Generate QR</div>
+<div class="nav-item" onclick="showPage('scan',this)" data-page="scan"><i class="fas fa-camera"></i> Scan QR</div>
+<div class="nav-item" onclick="showPage('mark',this)" data-page="mark"><i class="fas fa-clipboard-check"></i> Mark Attendance</div>
+<div class="nav-item" onclick="showPage('students',this)" data-page="students"><i class="fas fa-users"></i> Students</div>
+<div class="nav-item" onclick="showPage('reports',this)" data-page="reports"><i class="fas fa-file-alt"></i> Reports</div>
+<div class="nav-item" onclick="resetAllData()" style="color:#f87171;margin-top:10px"><i class="fas fa-trash-alt"></i> Reset All Data</div>
 <button class="logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
 </div>
 
 <div class="main-content">
 
-<!-- DASHBOARD -->
 <div id="page-dash" class="page">
 <div class="page-header"><h1>Dashboard</h1><p>Attendance Overview</p></div>
 <div class="stats">
@@ -171,24 +208,22 @@ tr:hover{background:#f8fafc}
 </div>
 </div>
 
-<!-- GENERATE QR -->
 <div id="page-qr" class="page hidden">
 <div class="page-header"><h1>Generate QR Code</h1><p>Create QR for student attendance</p></div>
 <div class="card">
 <h2><i class="fas fa-user"></i> Student & Course</h2>
 <div class="form-group"><label>Student</label><select id="genStudent"><option value="">-- Select Student --</option></select></div>
 <div class="form-group"><label>Course</label><select id="genCourse"><option value="">-- Select Course --</option></select></div>
-<div class="form-group"><label>Session</label><input type="text" id="genSession" placeholder="e.g. Lecture 1"></div>
+<div class="form-group"><label>Session</label><input type="text" id="genSession" placeholder="e.g. Lecture 1" value="Lecture 1"></div>
 <button class="btn btn-blue" onclick="genQR()"><i class="fas fa-magic"></i> Generate QR</button>
 <div class="qr-box" id="qrBox" style="display:none">
 <div id="qrcode"></div>
 <p id="qrInfo" style="margin-top:10px;color:#1e293b;font-weight:600"></p>
-<button class="btn btn-green" onclick="dlQR()"><i class="fas fa-download"></i> Download</button>
+<button class="btn btn-green" onclick="dlQR()"><i class="fas fa-download"></i> Download Image URL</button>
 </div>
 </div>
 </div>
 
-<!-- SCAN QR -->
 <div id="page-scan" class="page hidden">
 <div class="page-header"><h1>Scan QR Code</h1><p>Scan student QR to mark attendance</p></div>
 <div class="card">
@@ -202,13 +237,12 @@ tr:hover{background:#f8fafc}
 </div>
 <div class="card">
 <h2><i class="fas fa-keyboard"></i> Manual Entry</h2>
-<div class="form-group"><label>Student ID</label><input type="text" id="manualId" placeholder="Enter ID (e.g. CS001)"></div>
+<div class="form-group"><label>Student ID</label><input type="text" id="manualId" placeholder="Enter ID (e.g. RITW/661/17)"></div>
 <div class="form-group"><label>Course</label><select id="manualCourse"><option value="">-- Select Course --</option></select></div>
 <button class="btn btn-green" onclick="manualMark()"><i class="fas fa-check"></i> Mark Present</button>
 </div>
 </div>
 
-<!-- MARK ATTENDANCE -->
 <div id="page-mark" class="page hidden">
 <div class="page-header"><h1>Mark Attendance</h1><p>Manual attendance marking</p></div>
 <div class="card">
@@ -226,14 +260,13 @@ tr:hover{background:#f8fafc}
 </div>
 </div>
 
-<!-- STUDENTS -->
 <div id="page-students" class="page hidden">
 <div class="page-header"><h1>Students</h1><p>Manage student records</p></div>
 <div class="card">
 <h2><i class="fas fa-user-plus"></i> Add New Student</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
 <div class="form-group"><label>Full Name</label><input type="text" id="addName" placeholder="Full name"></div>
-<div class="form-group"><label>Student ID</label><input type="text" id="addId" placeholder="e.g. CS001"></div>
+<div class="form-group"><label>Student ID</label><input type="text" id="addId" placeholder="e.g. RITW/1500/17"></div>
 <div class="form-group"><label>Email</label><input type="email" id="addEmail" placeholder="Email"></div>
 <div class="form-group"><label>Department</label><select id="addDept"><option value="">Select</option></select></div>
 <div class="form-group"><label>Year</label><select id="addYear"><option value="1st">1st Year</option><option value="2nd">2nd Year</option><option value="3rd">3rd Year</option><option value="4th">4th Year</option></select></div>
@@ -251,7 +284,6 @@ tr:hover{background:#f8fafc}
 </div>
 </div>
 
-<!-- REPORTS -->
 <div id="page-reports" class="page hidden">
 <div class="page-header"><h1>Reports</h1><p>View and export attendance reports</p></div>
 <div class="card">
@@ -263,13 +295,62 @@ tr:hover{background:#f8fafc}
 <div><label style="font-size:0.85em;color:#64748b">Department</label><select id="repDept"><option value="">All</option></select></div>
 </div>
 <button class="btn btn-blue" onclick="genReport()"><i class="fas fa-eye"></i> View</button>
-<button class="btn btn-red" onclick="dlPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
-<button class="btn btn-green" onclick="dlCSV()"><i class="fas fa-file-csv"></i> CSV</button>
+<button class="btn btn-green" onclick="dlCSV()"><i class="fas fa-file-csv"></i> Export CSV</button>
 </div>
 <div class="card" id="repResult" style="display:none">
-<h2><i class="fas fa-file-alt"></i> Report</h2>
+<h2><i class="fas fa-file-alt"></i> Report Results</h2>
 <p id="repInfo" style="color:#64748b;margin-bottom:10px"></p>
-<div class="table-container" id="repTable"></div>
+<div class="table-container">
+  <table><thead><tr><th>ID</th><th>Name</th><th>Course</th><th>Dept</th><th>Date</th><th>Time</th><th>Status</th></tr></thead><tbody id="repTableBody"></tbody></table>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div id="studentApp" class="app">
+<div class="sidebar">
+<div class="sidebar-header"><h3><i class="fas fa-user-graduate"></i> Student Portal</h3></div>
+<div class="nav-item active" onclick="showStudentPage('myqr',this)" data-page="myqr"><i class="fas fa-qrcode"></i> My QR Code</div>
+<div class="nav-item" onclick="showStudentPage('myattendance',this)" data-page="myattendance"><i class="fas fa-clipboard-list"></i> My Attendance</div>
+<div class="nav-item" onclick="resetAllData()" style="color:#f87171;margin-top:10px"><i class="fas fa-trash-alt"></i> Reset All Data</div>
+<button class="logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+</div>
+
+<div class="main-content">
+
+<div id="spage-myqr" class="spage">
+<div class="page-header"><h1>My QR Code</h1><p>Show this to your instructor for attendance</p></div>
+<div class="student-info">
+<h2 id="stuName">Student Name</h2>
+<p id="stuDetails">ID: - | Dept: -</p>
+</div>
+<div class="card">
+<h2><i class="fas fa-qrcode"></i> Your Attendance QR</h2>
+<div class="student-qr-big">
+<div id="studentQRCode"></div>
+<p style="margin-top:15px;color:#64748b;font-size:0.9em">Scan this code to mark your attendance</p>
+</div>
+<div style="text-align:center">
+<button class="btn btn-blue" onclick="refreshStudentQR()"><i class="fas fa-sync"></i> Refresh QR</button>
+</div>
+</div>
+</div>
+
+<div id="spage-myattendance" class="spage hidden">
+<div class="page-header"><h1>My Attendance</h1><p>View your attendance history</p></div>
+<div class="stats">
+<div class="stat-card"><div class="stat-icon green"><i class="fas fa-check"></i></div><div><div class="stat-num" id="stuStatPresent">0</div><div class="stat-label">Present</div></div></div>
+<div class="stat-card"><div class="stat-icon red"><i class="fas fa-times"></i></div><div><div class="stat-num" id="stuStatAbsent">0</div><div class="stat-label">Absent</div></div></div>
+<div class="stat-card"><div class="stat-icon yellow"><i class="fas fa-clock"></i></div><div><div class="stat-num" id="stuStatLate">0</div><div class="stat-label">Late</div></div></div>
+<div class="stat-card"><div class="stat-icon purple"><i class="fas fa-calendar-check"></i></div><div><div class="stat-num" id="stuStatExcused">0</div><div class="stat-label">Excused</div></div></div>
+</div>
+<div class="card">
+<h2><i class="fas fa-history"></i> Attendance History</h2>
+<div class="attendance-history">
+<table><thead><tr><th>Date</th><th>Course</th><th>Status</th><th>Time</th><th>Method</th></tr></thead><tbody id="stuAttTable"></tbody></table>
+</div>
 </div>
 </div>
 
@@ -277,86 +358,163 @@ tr:hover{background:#f8fafc}
 </div>
 
 <script>
-// ===== DATA =====
+// ===== INITIAL DATA SOURCE =====
+var defaultStudents=[
+  {id:'RITW/661/17',name:'ABINET TEKLU GEBREKIRSTOS',email:'abinet@uni.edu',dept:'Information Technology',year:'4th',phone:'+251900000001'},
+  {id:'RITW/1230/17',name:'AMANUEL BELETE MOSSA',email:'amanuel@uni.edu',dept:'Information Technology',year:'4th',phone:'+251900000002'},
+  {id:'RITW/1178/17',name:'AMRIYA MISBAH MENUR',email:'amriya@uni.edu',dept:'Information Technology',year:'4th',phone:'+251900000003'},
+  {id:'RITW/1070/17',name:'ANSIF JIRA ABDISSA',email:'ansif@uni.edu',dept:'Information Technology',year:'4th',phone:'+251900000004'},
+  {id:'RITW/1251/17',name:'BEIMNET FIREW BEKELE',email:'beimnet@uni.edu',dept:'Information Technology',year:'4th',phone:'+251900000005'},
+  {id:'RITW/1336/17',name:'BINIYAM ZERIHUN ADUGNA',email:'biniyam@uni.edu',dept:'Information Technology',year:'4th',phone:'+251900000006'},
+  {id:'RITW/1105/17',name:'DANIEL MULATU EYOB',email:'daniel.m@uni.edu',dept:'Information Technology',year:'4th',phone:'+251900000007'},
+  {id:'RITW/1068/17',name:'DANIEL TEKLU KEBEDE',email:'daniel.t@uni.edu',dept:'Information Technology',year:'4th',phone:'+251900000008'},
+  {id:'RITW/1069/17',name:'DANIYA NURI WABELA',email:'daniya@uni.edu',dept:'Information Technology',year:'4th',phone:'+251900000009'},
+  {id:'RITW/1107/17',name:'ENDALKACHEW SOLOMON BELAY',email:'endalkachew@uni.edu',dept:'Information Technology',year:'4th',phone:'+251900000010'},
+  {id:'RITW/1334/17',name:'FASIKA DESALEGN KEDIR',email:'fasika@uni.edu',dept:'Information Technology',year:'4th',phone:'+251900000011'},
+  {id:'RITW/1348/17',name:'FERUZA KASIM YASIN',email:'feruza@uni.edu',dept:'Information Technology',year:'4th',phone:'+251900000012'},
+  {id:'RITW/1139/17',name:'FRESELAM AYALEW KASSA',email:'freselam@uni.edu',dept:'Information Technology',year:'4th',phone:'+251900000013'},
+  {id:'RITW/1138/17',name:'HABTEMARIAM KEBEDE BIRHANU',email:'habtemariam@uni.edu',dept:'Information Technology',year:'4th',phone:'+251900000014'},
+  {id:'RITW/434/17',name:'HANA ADMASSU AGONAFER',email:'hana.a@uni.edu',dept:'Information Technology',year:'4th',phone:'+251900000015'},
+  {id:'RITW/1063/17',name:'HANA TEFERA BELAY',email:'hana.t@uni.edu',dept:'Information Technology',year:'4th',phone:'+251900000016'},
+  {id:'RITW/438/17',name:'HAYAT RIDWAN JEMAL',email:'hayat@uni.edu',dept:'Information Technology',year:'4th',phone:'+251900000017'}
+];
+
+var defaultCourses=[
+  {code:'IT401',name:'Network Security'},
+  {code:'IT402',name:'Web Development'},
+  {code:'IT403',name:'Database Administration'},
+  {code:'IT404',name:'Software Engineering'},
+  {code:'IT405',name:'Data Science'},
+  {code:'IT406',name:'Cyber Security'}
+];
+
 var students=[];
 var courses=[];
 var attendance=[];
-var depts=['Computer Science','Electrical Engineering','Mechanical Engineering','Civil Engineering','Medicine','Business','Law','Pharmacy','Web Development','Database Administration','Information Technology','Software Engineering','Data Science','Cyber Security'];
+var depts=['Information Technology','Computer Science','Software Engineering','Data Science','Cyber Security','Web Development','Database Administration','Electrical Engineering','Mechanical Engineering','Civil Engineering','Medicine','Business','Law','Pharmacy'];
 var scanner=null;
-var curQR=null;
-var curRep=[];
-
-// ===== DEMO DATA =====
-function loadDemo(){
-students=[
-  {id:'CS001',name:'Abebe Kebede',email:'abebe@uni.edu',dept:'Computer Science',year:'3rd',phone:'+251911111111'},
-  {id:'CS002',name:'Almaz Tadesse',email:'almaz@uni.edu',dept:'Computer Science',year:'3rd',phone:'+251922222222'},
-  {id:'WD001',name:'Dawit Hailu',email:'dawit@uni.edu',dept:'Web Development',year:'2nd',phone:'+251933333333'},
-  {id:'DB001',name:'Fatuma Ahmed',email:'fatuma@uni.edu',dept:'Database Administration',year:'4th',phone:'+251944444444'},
-  {id:'IT001',name:'Helen Desta',email:'helen@uni.edu',dept:'Information Technology',year:'3rd',phone:'+251966666666'}
-];
-courses=[
-  {code:'CS301',name:'Database Systems'},
-  {code:'CS302',name:'Software Engineering'},
-  {code:'WD201',name:'Web Design'},
-  {code:'DB301',name:'Advanced SQL'},
-  {code:'IT401',name:'Network Security'},
-  {code:'DS101',name:'Data Science Basics'}
-];
-localStorage.setItem('uni_students',JSON.stringify(students));
-localStorage.setItem('uni_courses',JSON.stringify(courses));
-}
+var currentStudentId=null;
+var currentUserType=null;
+var qrcodeGenInstance=null;
+var studentQRInstance=null;
 
 // ===== INIT =====
 function init(){
   var s=localStorage.getItem('uni_students');
   var c=localStorage.getItem('uni_courses');
   var a=localStorage.getItem('uni_attendance');
-  if(s){students=JSON.parse(s);}else{loadDemo();}
-  if(c){courses=JSON.parse(c);}
+
+  if(s){students=JSON.parse(s);}else{students=defaultStudents; localStorage.setItem('uni_students', JSON.stringify(students));}
+  if(c){courses=JSON.parse(c);}else{courses=defaultCourses; localStorage.setItem('uni_courses', JSON.stringify(courses));}
   if(a){attendance=JSON.parse(a);}
-  if(localStorage.getItem('uni_session')==='active'){showApp();}
+
+  // Setup initial input values
   var today=new Date().toISOString().split('T')[0];
   document.getElementById('dashDate').value=today;
   document.getElementById('markDate').value=today;
   document.getElementById('repFrom').value=today;
   document.getElementById('repTo').value=today;
+
   updateSelects();
-  updateDash();
-  renderStu();
-  renderMark();
+
+  // Restore Session
+  var sessionType=localStorage.getItem('uni_session_type');
+  var sessionId=localStorage.getItem('uni_session_id');
+  if(sessionType==='admin'){
+    showAdminApp();
+  }else if(sessionType==='student'&&sessionId){
+    var found=students.find(function(item){return item.id===sessionId;});
+    if(found){
+      currentStudentId=sessionId;
+      showStudentApp();
+    }else{
+      logout();
+    }
+  }
 }
 
-// ===== LOGIN =====
+// ===== LOGIN TABS =====
+function switchLogin(type){
+  document.getElementById('tabAdmin').classList.toggle('active',type==='admin');
+  document.getElementById('tabStudent').classList.toggle('active',type==='student');
+  document.getElementById('adminLogin').classList.toggle('hidden',type!=='admin');
+  document.getElementById('studentLogin').classList.toggle('hidden',type!=='student');
+  document.getElementById('loginHint').style.display=type==='admin'?'block':'none';
+  document.getElementById('loginError').style.display='none';
+}
+
+// ===== AUTH =====
 function login(){
   var u=document.getElementById('loginUser').value.trim();
   var p=document.getElementById('loginPass').value;
   if(u==='admin'&&p==='admin2024'){
+    localStorage.setItem('uni_session_type','admin');
     localStorage.setItem('uni_session','active');
-    showApp();
+    showAdminApp();
   }else{
-    document.getElementById('loginError').style.display='block';
-    setTimeout(function(){document.getElementById('loginError').style.display='none';},3000);
+    var err=document.getElementById('loginError');
+    err.textContent='Wrong username or password!';
+    err.style.display='block';
+  }
+}
+
+function studentLogin(){
+  var id=document.getElementById('studentLoginId').value.trim();
+  if(!id){showToast('Please enter your Student ID','error');return;}
+
+  var stu=students.find(function(s){return s.id.toUpperCase()===id.toUpperCase();});
+
+  if(stu){
+    currentStudentId=stu.id;
+    localStorage.setItem('uni_session_type','student');
+    localStorage.setItem('uni_session_id',stu.id);
+    localStorage.setItem('uni_session','active');
+    showStudentApp();
+  }else{
+    var err=document.getElementById('loginError');
+    err.textContent='Student ID "'+id+'" not found!';
+    err.style.display='block';
   }
 }
 
 function logout(){
   localStorage.removeItem('uni_session');
+  localStorage.removeItem('uni_session_type');
+  localStorage.removeItem('uni_session_id');
+  if(scanner){stopScan();}
   location.reload();
 }
 
-function showApp(){
+function showAdminApp(){
   document.getElementById('loginPage').style.display='none';
-  document.getElementById('mainApp').style.display='block';
+  document.getElementById('adminApp').style.display='block';
+  document.getElementById('studentApp').style.display='none';
+  currentUserType='admin';
   updateDash();
+}
+
+function showStudentApp(){
+  document.getElementById('loginPage').style.display='none';
+  document.getElementById('adminApp').style.display='none';
+  document.getElementById('studentApp').style.display='block';
+  currentUserType='student';
+  renderStudentDashboard();
+}
+
+// ===== TOAST =====
+function showToast(msg,type){
+  var t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast show '+type;
+  setTimeout(function(){t.classList.remove('show');},3000);
 }
 
 // ===== NAVIGATION =====
 function showPage(page,nav){
-  var pages=document.querySelectorAll('.page');
+  var pages=document.querySelectorAll('#adminApp .page');
   for(var i=0;i<pages.length;i++){pages[i].classList.add('hidden');}
   document.getElementById('page-'+page).classList.remove('hidden');
-  var navs=document.querySelectorAll('.nav-item');
+  var navs=document.querySelectorAll('#adminApp .nav-item');
   for(var i=0;i<navs.length;i++){navs[i].classList.remove('active');}
   if(nav){nav.classList.add('active');}
   if(page!=='scan'){stopScan();}
@@ -365,7 +523,18 @@ function showPage(page,nav){
   if(page==='students'){renderStu();}
 }
 
-// ===== UPDATE SELECTS =====
+function showStudentPage(page,nav){
+  var pages=document.querySelectorAll('#studentApp .spage');
+  for(var i=0;i<pages.length;i++){pages[i].classList.add('hidden');}
+  document.getElementById('spage-'+page).classList.remove('hidden');
+  var navs=document.querySelectorAll('#studentApp .nav-item');
+  for(var i=0;i<navs.length;i++){navs[i].classList.remove('active');}
+  if(nav){nav.classList.add('active');}
+  if(page==='myqr'){renderStudentQR();}
+  if(page==='myattendance'){renderStudentAttendance();}
+}
+
+// ===== CONTROL LOADING CONTROLS =====
 function updateSelects(){
   var st=document.getElementById('genStudent');
   if(st){
@@ -378,7 +547,7 @@ function updateSelects(){
   for(var i=0;i<cs.length;i++){
     var el=document.getElementById(cs[i]);
     if(el){
-      el.innerHTML='<option value="">'+(i<2?'-- Select Course --':'All')+'</option>';
+      el.innerHTML='<option value="">'+(i<2?'-- Select Course --':'All Courses')+'</option>';
       for(var j=0;j<courses.length;j++){
         el.innerHTML+='<option value="'+courses[j].code+'">'+courses[j].name+'</option>';
       }
@@ -388,7 +557,7 @@ function updateSelects(){
   for(var i=0;i<ds.length;i++){
     var el=document.getElementById(ds[i]);
     if(el){
-      el.innerHTML='<option value="">'+(i===0?'Select Department':'All')+'</option>';
+      el.innerHTML='<option value="">'+(i===0?'Select Department':'All Departments')+'</option>';
       for(var j=0;j<depts.length;j++){
         el.innerHTML+='<option value="'+depts[j]+'">'+depts[j]+'</option>';
       }
@@ -396,392 +565,400 @@ function updateSelects(){
   }
 }
 
-// ===== DASHBOARD =====
+// ===== DASHBOARD FUNCTIONS =====
 function updateDash(){
   var date=document.getElementById('dashDate').value;
-  var recs=[];
-  for(var i=0;i<attendance.length;i++){
-    if(attendance[i].date===date){recs.push(attendance[i]);}
-  }
+  var recs=attendance.filter(function(r){return r.date===date;});
+
   var pre=0,abs=0,late=0,exc=0,ear=0;
-  for(var i=0;i<recs.length;i++){
-    if(recs[i].status==='Present'){pre++;}
-    else if(recs[i].status==='Absent'){abs++;}
-    else if(recs[i].status==='Late'){late++;}
-    else if(recs[i].status==='Excused'){exc++;}
-    else if(recs[i].status==='Early Leave'){ear++;}
-  }
+  recs.forEach(function(r){
+    if(r.status==='Present') pre++;
+    else if(r.status==='Absent') abs++;
+    else if(r.status==='Late') late++;
+    else if(r.status==='Excused') exc++;
+    else if(r.status==='Early Leave') ear++;
+  });
+
   document.getElementById('stTotal').textContent=students.length;
   document.getElementById('stPresent').textContent=pre;
   document.getElementById('stAbsent').textContent=abs;
   document.getElementById('stLate').textContent=late;
   document.getElementById('stExcused').textContent=exc;
   document.getElementById('stEarly').textContent=ear;
+
   var box=document.getElementById('dashList');
   if(recs.length===0){
-    box.innerHTML='<div class="empty"><i class="fas fa-clipboard-list"></i><p>No records for '+date+'</p></div>';
+    box.innerHTML='<div class="empty"><i class="fas fa-clipboard-list"></i><p>No records tracked for '+date+'</p></div>';
   }else{
-    var html='<table><thead><tr><th>Name</th><th>ID</th><th>Course</th><th>Status</th><th>Time</th></tr></thead><tbody>';
-    for(var i=0;i<recs.length;i++){
-      var r=recs[i];
-      var b=r.status==='Present'?'badge-present':r.status==='Absent'?'badge-absent':r.status==='Late'?'badge-late':r.status==='Excused'?'badge-excused':'badge-early';
-      html+='<tr><td>'+r.name+'</td><td>'+r.studentId+'</td><td>'+r.course+'</td><td><span class="badge '+b+'">'+r.status+'</span></td><td>'+r.time+'</td></tr>';
-    }
-    html+='</tbody></table>';
+    var html='<div class="table-container"><table><thead><tr><th>Student ID</th><th>Name</th><th>Course</th><th>Time</th><th>Status</th></tr></thead><tbody>';
+    recs.forEach(function(r){
+      var badgeMap={
+        'Present':'badge-present', 'Absent':'badge-absent', 'Late':'badge-late', 'Excused':'badge-excused', 'Early Leave':'badge-early'
+      };
+      html+='<tr><td>'+r.id+'</td><td>'+r.name+'</td><td>'+r.course+'</td><td>'+r.time+'</td><td><span class="badge '+badgeMap[r.status]+'">'+r.status+'</span></td></tr>';
+    });
+    html+='</tbody></table></div>';
     box.innerHTML=html;
   }
 }
 
-// ===== QR GENERATION =====
+// ===== QR GENERATOR =====
 function genQR(){
   var sid=document.getElementById('genStudent').value;
-  var cid=document.getElementById('genCourse').value;
+  var ccode=document.getElementById('genCourse').value;
   var sess=document.getElementById('genSession').value.trim();
-  if(!sid||!cid){alert('Select student and course!');return;}
-  var stu=null,crs=null;
-  for(var i=0;i<students.length;i++){if(students[i].id===sid){stu=students[i];break;}}
-  for(var i=0;i<courses.length;i++){if(courses[i].code===cid){crs=courses[i];break;}}
-  curQR={studentId:stu.id,name:stu.name,course:crs.code,courseName:crs.name,session:sess||'Regular',time:new Date().toISOString()};
+
+  if(!sid || !ccode){
+    showToast('Please select a student and a course!','error');
+    return;
+  }
+
+  var stu=students.find(function(s){return s.id===sid;});
+  var qrPayload=JSON.stringify({id:sid, course:ccode, session:sess, type:'uni_attendance_qr'});
+
   document.getElementById('qrcode').innerHTML='';
-  new QRCode(document.getElementById('qrcode'),{text:JSON.stringify(curQR),width:200,height:200,colorDark:'#1a56db',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.H});
-  document.getElementById('qrInfo').textContent=stu.name+' - '+crs.name;
+  qrcodeGenInstance = new QRCode(document.getElementById('qrcode'), {
+    text: qrPayload, width: 180, height: 180
+  });
+
+  document.getElementById('qrInfo').textContent=stu.name + ' - ' + ccode + ' ('+sess+')';
   document.getElementById('qrBox').style.display='block';
+  showToast('QR Generated successfully!','success');
 }
 
 function dlQR(){
-  var c=document.querySelector('#qrcode canvas');
-  if(c){
-    var a=document.createElement('a');
-    a.download='QR-'+curQR.studentId+'.png';
-    a.href=c.toDataURL();
-    a.click();
+  var img=document.querySelector('#qrcode img');
+  if(img){
+    window.open(img.src, '_blank');
+  }else{
+    showToast('Please generate a QR Code first','error');
   }
 }
 
-// ===== SCANNING =====
+// ===== SCANNER MANAGEMENT =====
 function startScan(){
-  if(scanner){return;}
-  if(typeof Html5Qrcode==='undefined'){alert('Scanner library not loaded. Check internet.');return;}
-  scanner=new Html5Qrcode('reader');
-  scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:200,height:200}},function(text){onScan(text);},function(err){}).catch(function(err){showScan('err','Camera error. Allow camera access.');});
+  document.getElementById('scanResult').style.display='none';
+  if(!scanner){
+    scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
+  }
+  scanner.render(onScanSuccess, onScanFailure);
 }
 
 function stopScan(){
   if(scanner){
-    scanner.stop().then(function(){scanner=null;}).catch(function(){});
+    scanner.clear().then(function(){
+      scanner=null;
+    }).catch(function(err){console.error(err);});
   }
 }
 
-function onScan(text){
-  try{
-    var data=JSON.parse(text);
-    if(data.studentId){
-      markAtt(data.studentId,data.name,data.course||'General','QR Scan');
-      return;
+function onScanSuccess(decodedText) {
+  try {
+    var data = JSON.parse(decodedText);
+    if(data.type==='uni_attendance_qr' || data.id){
+      markStatus(data.id, data.course || 'Scanned Session', 'Present', 'QR Scanner');
+      var resBox=document.getElementById('scanResult');
+      resBox.className='scan-result ok';
+      resBox.innerHTML='<strong>Success!</strong> Marked '+data.id+' Present.';
+      resBox.style.display='block';
+      showToast('Attendance logged!','success');
+      stopScan();
+    }else{
+      throw new Error('Not an approved institutional key');
     }
-  }catch(e){}
-  var id=text.trim().toUpperCase();
-  var stu=null;
-  for(var i=0;i<students.length;i++){if(students[i].id===id){stu=students[i];break;}}
-  if(stu){markAtt(stu.id,stu.name,'General','Barcode');}
-  else{showScan('err','Student ID "'+text+'" not found');}
+  } catch(e) {
+    var resBox=document.getElementById('scanResult');
+    resBox.className='scan-result err';
+    resBox.innerHTML='<strong>Error!</strong> Invalid QR Content.';
+    resBox.style.display='block';
+  }
+}
+
+function onScanFailure(error) {
+  // Silent fallback to keep loop active
 }
 
 function manualMark(){
-  var id=document.getElementById('manualId').value.trim().toUpperCase();
-  var crs=document.getElementById('manualCourse').value||'General';
-  if(!id){showScan('err','Please enter student ID');return;}
-  var stu=null;
-  for(var i=0;i<students.length;i++){if(students[i].id===id){stu=students[i];break;}}
-  if(stu){
-    markAtt(stu.id,stu.name,crs,'Manual');
-    document.getElementById('manualId').value='';
-  }else{
-    showScan('err','No student with ID: '+id);
-  }
+  var id=document.getElementById('manualId').value.trim();
+  var course=document.getElementById('manualCourse').value;
+  if(!id || !course){showToast('Provide both Student ID and Course','error'); return;}
+
+  var stu=students.find(function(s){return s.id.toUpperCase()===id.toUpperCase();});
+  if(!stu){showToast('Student ID not found!','error'); return;}
+
+  markStatus(stu.id, course, 'Present', 'Manual Input');
+  showToast('Marked '+stu.name+' Present!','success');
+  document.getElementById('manualId').value='';
 }
 
-function markAtt(id,name,course,method){
-  var now=new Date();
-  var today=now.toISOString().split('T')[0];
-  var time=now.toLocaleTimeString();
-  for(var i=0;i<attendance.length;i++){
-    if(attendance[i].studentId===id&&attendance[i].date===today&&attendance[i].course===course){
-      showScan('err',name+' already marked today');
-      return;
-    }
-  }
-  attendance.push({studentId:id,name:name,course:course,date:today,time:time,status:'Present',method:method});
-  localStorage.setItem('uni_attendance',JSON.stringify(attendance));
-  showScan('ok','Marked Present! '+name+' - '+course);
+// ===== SYSTEM STORAGE LOGGER =====
+function markStatus(studentId, courseCode, status, method){
+  var stu=students.find(function(s){return s.id===studentId;});
+  if(!stu) return;
+
+  var today=new Date().toISOString().split('T')[0];
+  var nowTime=new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+  // Avoid multiple daily records for same course
+  attendance = attendance.filter(function(r){
+    return !(r.id===studentId && r.date===today && r.course===courseCode);
+  });
+
+  attendance.push({
+    id: stu.id,
+    name: stu.name,
+    dept: stu.dept,
+    course: courseCode,
+    date: today,
+    time: nowTime,
+    status: status,
+    method: method || 'Manual'
+  });
+
+  localStorage.setItem('uni_attendance', JSON.stringify(attendance));
   updateDash();
 }
 
-function showScan(type,msg){
-  var r=document.getElementById('scanResult');
-  r.className='scan-result '+type;
-  r.innerHTML=(type==='ok'?'<i class="fas fa-check-circle" style="font-size:1.5em"></i><br>':'<i class="fas fa-times-circle" style="font-size:1.5em"></i><br>')+msg;
-  r.style.display='block';
-  setTimeout(function(){r.style.display='none';},4000);
-}
-
-// ===== MARK ATTENDANCE =====
+// ===== MANUAL CONTROL ATTENDANCE BOARD =====
 function renderMark(){
   var date=document.getElementById('markDate').value;
-  var crs=document.getElementById('markCourse').value;
-  var dept=document.getElementById('markDept').value;
-  var box=document.getElementById('markList');
-  box.innerHTML='';
-  for(var i=0;i<students.length;i++){
-    var s=students[i];
-    if(dept&&s.dept!==dept){continue;}
-    var rec=null;
-    for(var j=0;j<attendance.length;j++){
-      if(attendance[j].studentId===s.id&&attendance[j].date===date&&(!crs||attendance[j].course===crs)){
-        rec=attendance[j];break;
-      }
-    }
-    var st=rec?rec.status:'Not Marked';
-    var ap=st==='Present'?'on':'';
-    var aa=st==='Absent'?'on':'';
-    var al=st==='Late'?'on':'';
-    var ae=st==='Excused'?'on':'';
-    var aear=st==='Early Leave'?'on':'';
-    var b=st==='Present'?'badge-present':st==='Absent'?'badge-absent':st==='Late'?'badge-late':st==='Excused'?'badge-excused':st==='Early Leave'?'badge-early':'';
-    box.innerHTML+='<div class="att-item"><div class="att-info"><div class="att-avatar">'+s.name.charAt(0)+'</div><div><div style="font-weight:600">'+s.name+'</div><div style="font-size:0.85em;color:#64748b">'+s.id+' | '+s.dept+'</div></div></div><div class="status-btns"><button class="s-btn p '+ap+'" onclick="setStatus(\''+s.id+'\',\'Present\')">Present</button><button class="s-btn a '+aa+'" onclick="setStatus(\''+s.id+'\',\'Absent\')">Absent</button><button class="s-btn l '+al+'" onclick="setStatus(\''+s.id+'\',\'Late\')">Late</button><button class="s-btn e '+ae+'" onclick="setStatus(\''+s.id+'\',\'Excused\')">Excused</button><button class="s-btn ear '+aear+'" onclick="setStatus(\''+s.id+'\',\'Early Leave\')">Early Leave</button></div><span class="badge '+b+'">'+st+'</span></div>';
+  var courseFilter=document.getElementById('markCourse').value;
+  var deptFilter=document.getElementById('markDept').value;
+  var list=document.getElementById('markList');
+
+  var matchedStudents = students.filter(function(s){
+    return !deptFilter || s.dept === deptFilter;
+  });
+
+  if(matchedStudents.length===0){
+    list.innerHTML='<div class="empty"><p>No target matches.</p></div>';
+    return;
   }
+
+  var html='';
+  matchedStudents.forEach(function(s){
+    var currentRecord = attendance.find(function(r){
+      return r.id===s.id && r.date===date && (!courseFilter || r.course===courseFilter);
+    });
+
+    var curStatus = currentRecord ? currentRecord.status : '';
+    var courseToLog = courseFilter || 'General';
+
+    html+='<div class="att-item" data-name="'+s.name.toUpperCase()+'" data-id="'+s.id.toUpperCase()+'">'+
+      '<div class="att-info">'+
+        '<div class="att-avatar">'+s.name.charAt(0)+'</div>'+
+        '<div><strong>'+s.name+'</strong><br><small style="color:#64748b">'+s.id+' | '+s.dept+'</small></div>'+
+      '</div>'+
+      '<div class="status-btns">'+
+        '<button class="s-btn p '+(curStatus==='Present'?'on':'')+'" onclick="toggleRecord(\''+s.id+'\',\''+courseToLog+'\',\'Present\')">P</button>'+
+        '<button class="s-btn a '+(curStatus==='Absent'?'on':'')+'" onclick="toggleRecord(\''+s.id+'\',\''+courseToLog+'\',\'Absent\')">A</button>'+
+        '<button class="s-btn l '+(curStatus==='Late'?'on':'')+'" onclick="toggleRecord(\''+s.id+'\',\''+courseToLog+'\',\'Late\')">L</button>'+
+        '<button class="s-btn ear '+(curStatus==='Early Leave'?'on':'')+'" onclick="toggleRecord(\''+s.id+'\',\''+courseToLog+'\',\'Early Leave\')">E</button>'+
+        '<button class="s-btn e '+(curStatus==='Excused'?'on':'')+'" onclick="toggleRecord(\''+s.id+'\',\''+courseToLog+'\',\'Excused\')">Ex</button>'+
+      '</div>'+
+    '</div>';
+  });
+
+  list.innerHTML=html;
 }
 
-function setStatus(id,status){
-  var date=document.getElementById('markDate').value;
-  var crs=document.getElementById('markCourse').value||'General';
-  var na=[];
-  for(var i=0;i<attendance.length;i++){
-    if(!(attendance[i].studentId===id&&attendance[i].date===date&&attendance[i].course===crs)){
-      na.push(attendance[i]);
-    }
-  }
-  attendance=na;
-  var stu=null;
-  for(var i=0;i<students.length;i++){if(students[i].id===id){stu=students[i];break;}}
-  if(stu){
-    attendance.push({studentId:id,name:stu.name,course:crs,date:date,time:new Date().toLocaleTimeString(),status:status,method:'Manual'});
-  }
-  localStorage.setItem('uni_attendance',JSON.stringify(attendance));
+function toggleRecord(sid, course, status){
+  markStatus(sid, course, status, 'Admin Interaction');
   renderMark();
-  updateDash();
 }
 
 function filterMark(){
-  var q=document.getElementById('markSearch').value.toLowerCase();
-  var items=document.querySelectorAll('.att-item');
-  for(var i=0;i<items.length;i++){
-    items[i].style.display=items[i].textContent.toLowerCase().indexOf(q)!==-1?'flex':'none';
-  }
+  var query=document.getElementById('markSearch').value.toUpperCase();
+  var items=document.querySelectorAll('#markList .att-item');
+  items.forEach(function(item){
+    var txt=item.getAttribute('data-name')+' '+item.getAttribute('data-id');
+    item.style.display = txt.indexOf(query) > -1 ? 'flex':'none';
+  });
 }
 
-// ===== STUDENTS =====
+// ===== STUDENT PROFILE MANAGEMENT =====
+function renderStu(){
+  var tbody=document.getElementById('stuTable');
+  tbody.innerHTML='';
+  students.forEach(function(s){
+    tbody.innerHTML+='<tr>'+
+      '<td>'+s.id+'</td>'+
+      '<td><strong>'+s.name+'</strong></td>'+
+      '<td>'+s.email+'</td>'+
+      '<td>'+s.dept+'</td>'+
+      '<td>'+s.year+'</td>'+
+      '<td>'+s.phone+'</td>'+
+      '<td><button class="btn btn-red" style="padding:4px 8px; font-size:0.8em" onclick="deleteStudent(\''+s.id+'\')"><i class="fas fa-trash"></i></button></td>'+
+    '</tr>';
+  });
+}
+
 function addStudent(){
   var name=document.getElementById('addName').value.trim();
-  var id=document.getElementById('addId').value.trim().toUpperCase();
+  var id=document.getElementById('addId').value.trim();
   var email=document.getElementById('addEmail').value.trim();
   var dept=document.getElementById('addDept').value;
   var year=document.getElementById('addYear').value;
   var phone=document.getElementById('addPhone').value.trim();
-  if(!name||!id){alert('Enter name and ID!');return;}
-  for(var i=0;i<students.length;i++){if(students[i].id===id){alert('ID already exists!');return;}}
-  students.push({id:id,name:name,email:email,dept:dept,year:year,phone:phone});
-  localStorage.setItem('uni_students',JSON.stringify(students));
+
+  if(!name || !id || !dept){showToast('Name, ID, and Department are required!','error'); return;}
+
+  var checked=students.find(function(s){return s.id===id;});
+  if(checked){showToast('ID already registered','error'); return;}
+
+  students.push({id:id, name:name, email:email||'-', dept:dept, year:year, phone:phone||'-'});
+  localStorage.setItem('uni_students', JSON.stringify(students));
+  
+  renderStu();
+  updateSelects();
+  
   document.getElementById('addName').value='';
   document.getElementById('addId').value='';
   document.getElementById('addEmail').value='';
-  document.getElementById('addPhone').value='';
-  document.getElementById('addMsg').style.display='block';
-  setTimeout(function(){document.getElementById('addMsg').style.display='none';},3000);
-  updateSelects();
-  renderStu();
-  updateDash();
-  renderMark();
+  
+  var msg=document.getElementById('addMsg');
+  msg.style.display='block';
+  setTimeout(function(){msg.style.display='none';},3000);
 }
 
-function delStu(id){
-  if(!confirm('Delete student '+id+'?')){return;}
-  var ns=[];
-  for(var i=0;i<students.length;i++){if(students[i].id!==id){ns.push(students[i]);}}
-  students=ns;
-  localStorage.setItem('uni_students',JSON.stringify(students));
-  renderStu();
-  updateSelects();
-  updateDash();
-  renderMark();
-}
-
-function renderStu(){
-  var tb=document.getElementById('stuTable');
-  tb.innerHTML='';
-  for(var i=0;i<students.length;i++){
-    var s=students[i];
-    tb.innerHTML+='<tr><td><b>'+s.id+'</b></td><td>'+s.name+'</td><td>'+(s.email||'-')+'</td><td>'+(s.dept||'-')+'</td><td>'+(s.year||'-')+'</td><td>'+(s.phone||'-')+'</td><td><button class="btn btn-red" onclick="delStu(\''+s.id+'\')" style="padding:5px 10px;font-size:0.8em"><i class="fas fa-trash"></i></button></td></tr>';
+function deleteStudent(id){
+  if(confirm('Remove student record for '+id+'?')){
+    students=students.filter(function(s){return s.id!==id;});
+    localStorage.setItem('uni_students', JSON.stringify(students));
+    renderStu();
+    updateSelects();
   }
 }
 
 function searchStu(){
-  var q=document.getElementById('stuSearch').value.toLowerCase();
+  var query=document.getElementById('stuSearch').value.toUpperCase();
   var rows=document.querySelectorAll('#stuTable tr');
-  for(var i=0;i<rows.length;i++){
-    rows[i].style.display=rows[i].textContent.toLowerCase().indexOf(q)!==-1?'':'none';
-  }
+  rows.forEach(function(row){
+    row.style.display = row.textContent.toUpperCase().indexOf(query) > -1 ? '':'none';
+  });
 }
 
-// ===== REPORTS =====
+// ===== REPORT GENERATION =====
 function genReport(){
   var from=document.getElementById('repFrom').value;
   var to=document.getElementById('repTo').value;
-  var crs=document.getElementById('repCourse').value;
+  var course=document.getElementById('repCourse').value;
   var dept=document.getElementById('repDept').value;
-  if(!from||!to){alert('Select date range!');return;}
-  var data=[];
-  for(var i=0;i<attendance.length;i++){
-    var a=attendance[i];
-    if(a.date>=from&&a.date<=to&&(!crs||a.course===crs)&&(!dept||getStudentDept(a.studentId)===dept)){
-      data.push(a);
-    }
-  }
-  curRep=data;
-  document.getElementById('repResult').style.display='block';
-  document.getElementById('repInfo').textContent='Period: '+from+' to '+to+' | Records: '+data.length;
-  var html='<table><thead><tr><th>#</th><th>Date</th><th>Name</th><th>ID</th><th>Dept</th><th>Course</th><th>Status</th><th>Time</th></tr></thead><tbody>';
-  for(var i=0;i<data.length;i++){
-    var r=data[i];
-    var b=r.status==='Present'?'badge-present':r.status==='Absent'?'badge-absent':r.status==='Late'?'badge-late':r.status==='Excused'?'badge-excused':'badge-early';
-    html+='<tr><td>'+(i+1)+'</td><td>'+r.date+'</td><td>'+r.name+'</td><td>'+r.studentId+'</td><td>'+getStudentDept(r.studentId)+'</td><td>'+r.course+'</td><td><span class="badge '+b+'">'+r.status+'</span></td><td>'+r.time+'</td></tr>';
-  }
-  html+='</tbody></table>';
-  document.getElementById('repTable').innerHTML=html;
-}
 
-function getStudentDept(id){
-  for(var i=0;i<students.length;i++){if(students[i].id===id){return students[i].dept||'-';}}
-  return '-';
-}
+  var results = attendance.filter(function(r){
+    var dCheck = r.date >= from && r.date <= to;
+    var cCheck = !course || r.course === course;
+    var deptCheck = !dept || r.dept === dept;
+    return dCheck && cCheck && deptCheck;
+  });
 
-// ===== PDF DOWNLOAD (like CSV) =====
-function dlPDF(){
-  if(curRep.length===0){alert('Generate report first!');return;}
-  var from=document.getElementById('repFrom').value;
-  var to=document.getElementById('repTo').value;
-  
-  // Build styled HTML for PDF
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Attendance Report</title><style>';
-  html+='body{font-family:Arial,sans-serif;padding:30px;font-size:12px;color:#333}';
-  html+='h1{color:#1a56db;text-align:center;font-size:24px;margin-bottom:5px}';
-  html+='.subtitle{text-align:center;color:#666;margin-bottom:25px;font-size:14px}';
-  html+='.summary{display:flex;justify-content:space-around;background:#f8fafc;padding:15px;border-radius:10px;margin-bottom:25px}';
-  html+='.sum-box{text-align:center}';
-  html+='.sum-num{font-size:28px;font-weight:bold;color:#1a56db}';
-  html+='.sum-label{font-size:12px;color:#64748b;margin-top:5px}';
-  html+='table{width:100%;border-collapse:collapse;font-size:11px}';
-  html+='th{background:#1a56db;color:white;padding:10px;text-align:left;font-weight:600}';
-  html+='td{padding:8px 10px;border-bottom:1px solid #e5e7eb}';
-  html+='tr:nth-child(even){background:#f8fafc}';
-  html+='.status-present{color:#059669;font-weight:bold}';
-  html+='.status-absent{color:#dc2626;font-weight:bold}';
-  html+='.status-late{color:#d97706;font-weight:bold}';
-  html+='.status-excused{color:#64748b;font-weight:bold}';
-  html+='.status-early{color:#1e40af;font-weight:bold}';
-  html+='.footer{text-align:center;margin-top:30px;font-size:11px;color:#94a3b8;border-top:1px solid #e5e7eb;padding-top:15px}';
-  html+='</style></head><body>';
-  
-  // Header
-  html+='<h1><i class="fas fa-university"></i> University Attendance Report</h1>';
-  html+='<p class="subtitle">Period: <strong>'+from+'</strong> to <strong>'+to+'</strong></p>';
-  
-  // Summary
-  var pre=0,abs=0,late=0,exc=0,ear=0;
-  for(var i=0;i<curRep.length;i++){
-    if(curRep[i].status==='Present')pre++;
-    else if(curRep[i].status==='Absent')abs++;
-    else if(curRep[i].status==='Late')late++;
-    else if(curRep[i].status==='Excused')exc++;
-    else if(curRep[i].status==='Early Leave')ear++;
+  var box=document.getElementById('repResult');
+  var tbody=document.getElementById('repTableBody');
+  tbody.innerHTML='';
+
+  if(results.length===0){
+    document.getElementById('repInfo').textContent='No logs found matching criteria parameters.';
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center; color:#94a3b8">Empty dataset</td></tr>';
+  }else{
+    document.getElementById('repInfo').textContent='Found '+results.length+' matching attendance entries.';
+    results.forEach(function(r){
+      tbody.innerHTML+='<tr>'+
+        '<td>'+r.id+'</td>'+
+        '<td>'+r.name+'</td>'+
+        '<td>'+r.course+'</td>'+
+        '<td>'+(r.dept || 'N/A')+'</td>'+
+        '<td>'+r.date+'</td>'+
+        '<td>'+r.time+'</td>'+
+        '<td><span class="badge badge-'+(r.status==='Present'?'present':'absent')+'">'+r.status+'</span></td>'+
+      '</tr>';
+    });
   }
-  html+='<div class="summary">';
-  html+='<div class="sum-box"><div class="sum-num">'+curRep.length+'</div><div class="sum-label">Total Records</div></div>';
-  html+='<div class="sum-box"><div class="sum-num" style="color:#10b981">'+pre+'</div><div class="sum-label">Present</div></div>';
-  html+='<div class="sum-box"><div class="sum-num" style="color:#ef4444">'+abs+'</div><div class="sum-label">Absent</div></div>';
-  html+='<div class="sum-box"><div class="sum-num" style="color:#f59e0b">'+late+'</div><div class="sum-label">Late</div></div>';
-  html+='<div class="sum-box"><div class="sum-num" style="color:#8b5cf6">'+exc+'</div><div class="sum-label">Excused</div></div>';
-  html+='<div class="sum-box"><div class="sum-num" style="color:#f97316">'+ear+'</div><div class="sum-label">Early Leave</div></div>';
-  html+='</div>';
-  
-  // Table
-  html+='<table><thead><tr><th>#</th><th>Date</th><th>Name</th><th>ID</th><th>Department</th><th>Course</th><th>Status</th><th>Time</th><th>Method</th></tr></thead><tbody>';
-  for(var i=0;i<curRep.length;i++){
-    var r=curRep[i];
-    var statusClass='status-'+r.status.toLowerCase().replace(' ','-');
-    html+='<tr><td>'+(i+1)+'</td><td>'+r.date+'</td><td>'+r.name+'</td><td>'+r.studentId+'</td><td>'+getStudentDept(r.studentId)+'</td><td>'+r.course+'</td><td class="'+statusClass+'">'+r.status+'</td><td>'+r.time+'</td><td>'+r.method+'</td></tr>';
-  }
-  html+='</tbody></table>';
-  
-  // Footer
-  html+='<div class="footer">Generated on '+new Date().toLocaleString()+' | QR Attendance System</div>';
-  html+='</body></html>';
-  
-  // Create blob and download like CSV
-  var blob=new Blob([html],{type:'text/html'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url;
-  a.download='Attendance-Report-'+from+'-to-'+to+'.html';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  
-  // Also open in new tab for printing
-  var w=window.open(url,'_blank');
-  if(w){
-    setTimeout(function(){w.print();},500);
-  }
+  box.style.display='block';
 }
 
 function dlCSV(){
-  var from=document.getElementById('repFrom').value;
-  var to=document.getElementById('repTo').value;
-  var crs=document.getElementById('repCourse').value;
-  var dept=document.getElementById('repDept').value;
-  var data=[];
-  for(var i=0;i<attendance.length;i++){
-    var a=attendance[i];
-    if(a.date>=from&&a.date<=to&&(!crs||a.course===crs)&&(!dept||getStudentDept(a.studentId)===dept)){
-      data.push(a);
-    }
-  }
-  var csv='Date,Name,ID,Department,Course,Status,Time,Method\n';
-  for(var i=0;i<data.length;i++){
-    var r=data[i];
-    csv+=r.date+','+r.name+','+r.studentId+','+getStudentDept(r.studentId)+','+r.course+','+r.status+','+r.time+','+r.method+'\n';
-  }
-  var blob=new Blob([csv],{type:'text/csv'});
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='report-'+from+'-to-'+to+'.csv';
-  a.click();
+  if(attendance.length===0){showToast('No structured data found to migrate.','error'); return;}
+  var csvContent = "data:text/csv;charset=utf-8,Student ID,Student Name,Course,Department,Date,Time,Status,Tracking Method\n";
+  attendance.forEach(function(r){
+    csvContent += `"${r.id}","${r.name}","${r.course}","${r.dept || 'IT'}","${r.date}","${r.time}","${r.status}","${r.method}"\n`;
+  });
+  var encodedUri = encodeURI(csvContent);
+  var link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "Attendance_System_Report.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
-init();
+// ===== STUDENT ACCESS INTERACTION BOARD =====
+function renderStudentDashboard(){
+  var stu=students.find(function(s){return s.id===currentStudentId;});
+  if(!stu) return;
+
+  document.getElementById('stuName').textContent=stu.name;
+  document.getElementById('stuDetails').textContent='ID: '+stu.id+' | Dept: '+stu.dept+' ('+stu.year+' Year)';
+  renderStudentQR();
+  renderStudentAttendance();
+}
+
+function renderStudentQR(){
+  var stu=students.find(function(s){return s.id===currentStudentId;});
+  if(!stu) return;
+
+  var qrPayload=JSON.stringify({id:stu.id, course:'Universal Scan', type:'uni_attendance_qr', time:Date.now()});
+  document.getElementById('studentQRCode').innerHTML='';
+  studentQRInstance = new QRCode(document.getElementById('studentQRCode'), {
+    text: qrPayload, width: 220, height: 220
+  });
+}
+
+function refreshStudentQR(){
+  renderStudentQR();
+  showToast('Secure handshake validation credential token renewed!','success');
+}
+
+function renderStudentAttendance(){
+  var tbody=document.getElementById('stuAttTable');
+  tbody.innerHTML='';
+
+  var myRecs=attendance.filter(function(r){return r.id===currentStudentId;});
+
+  var pre=0,abs=0,late=0,exc=0;
+  myRecs.forEach(function(r){
+    if(r.status==='Present') pre++;
+    else if(r.status==='Absent') abs++;
+    else if(r.status==='Late') late++;
+    else if(r.status==='Excused') exc++;
+
+    var badgeMap={'Present':'badge-present', 'Absent':'badge-absent', 'Late':'badge-late', 'Excused':'badge-excused', 'Early Leave':'badge-early'};
+
+    tbody.innerHTML+='<tr>'+
+      '<td>'+r.date+'</td>'+
+      '<td>'+r.course+'</td>'+
+      '<td><span class="badge '+badgeMap[r.status]+'">'+r.status+'</span></td>'+
+      '<td>'+r.time+'</td>'+
+      '<td>'+r.method+'</td>'+
+    '</tr>';
+  });
+
+  document.getElementById('stuStatPresent').textContent=pre;
+  document.getElementById('stuStatAbsent').textContent=abs;
+  document.getElementById('stuStatLate').textContent=late;
+  document.getElementById('stuStatExcused').textContent=exc;
+
+  if(myRecs.length===0){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center; color:#94a3b8">No logged logs found.</td></tr>';
+  }
+}
+
+// ===== EMERGENCY RESET ROUTINE =====
+function resetAllData(){
+  if(confirm('Are you absolutely sure you want to restore defaults? All attendance logs and newly created students will be permanently cleared.')){
+    localStorage.clear();
+    location.reload();
+  }
+}
 </script>
 </body>
-</html>"""
-
-with open('/mnt/agents/output/qr_attendance_pdf_fixed.html', 'w', encoding='utf-8') as f:
-    f.write(html)
-
-print("PDF download fixed!")
-print(f"Size: {len(html)/1024:.1f} KB")
-print("\nWhat changed:")
-print("- PDF now downloads as .html file (like CSV)")
-print("- Then opens in new tab with auto-print dialog")
-print("- You can 'Save as PDF' from the print dialog")
-print("- Includes summary stats at top of report")
-print("- Color-coded status in the table")
+</html>
